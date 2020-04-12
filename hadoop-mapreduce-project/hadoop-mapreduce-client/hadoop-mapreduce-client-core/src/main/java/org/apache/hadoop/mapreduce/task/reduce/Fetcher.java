@@ -310,8 +310,8 @@ class Fetcher<K,V> extends Thread {
       return;
     }
     
-    if(LOG.isDebugEnabled()) {
-      LOG.debug("Fetcher " + id + " going to fetch from " + host + " for: "
+    if(true) {
+      LOG.info("Fetcher " + id + " going to fetch from " + host + " for: "
         + maps);
     }
     
@@ -320,6 +320,7 @@ class Fetcher<K,V> extends Thread {
     
     // Construct the url and connect
     URL url = getMapOutputURL(host, maps);
+    LOG.info("getMapOutputURL from url: " + url.toString());
     DataInputStream input = openShuffleUrl(host, remaining, url);
     if (input == null) {
       return;

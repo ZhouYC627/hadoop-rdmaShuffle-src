@@ -98,7 +98,7 @@ class LocalFetcher<K,V> extends Fetcher<K, V> {
     Iterator<TaskAttemptID> iter = maps.iterator();
     while (iter.hasNext()) {
       TaskAttemptID map = iter.next();
-      LOG.debug("LocalFetcher " + id + " going to fetch: " + map);
+      LOG.info("LocalFetcher " + id + " going to fetch: " + map);
       if (copyMapOutput(map)) {
         // Successful copy. Remove this from our worklist.
         iter.remove();
@@ -149,6 +149,7 @@ class LocalFetcher<K,V> extends Fetcher<K, V> {
     // now read the file, seek to the appropriate section, and send it.
     FileSystem localFs = FileSystem.getLocal(job).getRaw();
     FSDataInputStream inStream = localFs.open(mapOutputFileName);
+    LOG.info("Opening mapOutputFileName: " + mapOutputFileName.getName());
 
     inStream = CryptoUtils.wrapIfNecessary(job, inStream);
 

@@ -1509,9 +1509,12 @@ public class MapTask extends Task {
       // release sort buffer before the merge
       kvbuffer = null;
       mergeParts();
+      load2RMDA();
       Path outputPath = mapOutputFile.getOutputFile();
       fileOutputByteCounter.increment(rfs.getFileStatus(outputPath).getLen());
     }
+
+
 
     public void close() { }
 
@@ -1842,6 +1845,7 @@ public class MapTask extends Task {
       Path finalIndexFile =
           mapOutputFile.getOutputIndexFileForWrite(finalIndexFileSize);
 
+      LOG.info("Writing to finalOutputFile:" + finalOutputFile.toString());
       //The output stream for the final single output file
       FSDataOutputStream finalOut = rfs.create(finalOutputFile, true, 4096);
 
@@ -1885,8 +1889,8 @@ public class MapTask extends Task {
                                indexRecord.partLength, codec, true);
             segmentList.add(i, s);
 
-            if (LOG.isDebugEnabled()) {
-              LOG.debug("MapId=" + mapId + " Reducer=" + parts +
+            if (true) {
+              LOG.info("MapId=" + mapId + " Reducer=" + parts +
                   "Spill =" + i + "(" + indexRecord.startOffset + "," +
                   indexRecord.rawLength + ", " + indexRecord.partLength + ")");
             }
@@ -1936,7 +1940,25 @@ public class MapTask extends Task {
         }
       }
     }
-    
+
+    private void load2RMDA() throws IOException {
+        partitions = job.getNumReduceTasks();
+        Path mapOutputFileName = mapOutputFile.getOutputFile();
+        Path indexFileName = mapOutputFileName.suffix(".index");
+
+        LOG.info("Loading file: " + mapOutputFileName + " to RDMA");
+
+        SpillRecord sr = new SpillRecord(indexFileName, job);
+        RDMAPartitionLoader[] loaders = new RDMAPartitionLoader[partitions];
+
+        for (int i = 0; i < partitions; i++){
+            IndexRecord ir = sr.getIndex(i);
+            loaders[i] = new RDMAPartitionLoader(ir, mapOutputFileName, i);
+            loaders[i].start();
+        }
+
+    }
+
     /**
      * Rename srcPath to dstPath on the same volume. This is the same
      * as RawLocalFileSystem's rename method, except that it will not
