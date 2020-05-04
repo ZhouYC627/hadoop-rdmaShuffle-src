@@ -24,6 +24,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -67,6 +68,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormatCounter;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitIndex;
 import org.apache.hadoop.mapreduce.task.MapContextImpl;
 import org.apache.hadoop.mapreduce.CryptoUtils;
+import org.apache.hadoop.net.SocketInputStream;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.IndexedSorter;
 import org.apache.hadoop.util.Progress;
@@ -1949,6 +1951,7 @@ public class MapTask extends Task {
         LOG.info("Loading file: " + mapOutputFileName + " to RDMA");
 
         SpillRecord sr = new SpillRecord(indexFileName, job);
+        /*
         RDMAPartitionLoader[] loaders = new RDMAPartitionLoader[partitions];
 
         for (int i = 0; i < partitions; i++){
@@ -1956,6 +1959,45 @@ public class MapTask extends Task {
             loaders[i] = new RDMAPartitionLoader(ir, mapOutputFileName, i);
             loaders[i].start();
         }
+         */
+        /*
+        Path indexForRDMA = indexFileName.suffix(".rdma");
+        //FileSystem localFs = FileSystem.getLocal(job).getRaw();
+        final FSDataOutputStream out = rfs.create(indexForRDMA);
+        try {
+            //out.writeChars(mapOutputFileName.getName());
+            for (int i = 0; i < partitions; i++){
+              out.writeLong(sr.getIndex(i).startOffset);
+              out.writeLong(sr.getIndex(i).partLength);
+              out.writeLong(sr.getIndex(i).rawLength);
+            }
+        } finally {
+          out.close();
+        }
+        */
+        String serverName = "localhost";
+        int port = 5500;
+        try {
+          LOG.info("Connecting to server: " + serverName + " : " + port);
+          Socket client = new Socket(serverName, port);
+          LOG.info(client.getRemoteSocketAddress() + " Connected!");
+          DataOutputStream out = new DataOutputStream(client.getOutputStream());
+
+          out.writeUTF(mapOutputFileName.toString());
+          out.writeUTF(getTaskID().toString());
+          out.writeInt(partitions);
+          for (int i = 0; i < partitions; i++){
+            out.writeLong(sr.getIndex(i).startOffset);
+            out.writeLong(sr.getIndex(i).partLength);
+            out.writeLong(sr.getIndex(i).rawLength);
+          }
+          out.close();
+          client.close();
+        } catch(IOException e) {
+          e.printStackTrace();
+          throw new IOException("Unable to connect or write RDMA server.");
+        }
+
 
     }
 
