@@ -1984,7 +1984,7 @@ public class MapTask extends Task {
           DataOutputStream out = new DataOutputStream(client.getOutputStream());
 
           out.writeUTF(mapOutputFileName.toString());
-          out.writeUTF(getTaskID().toString());
+          out.writeInt(getTaskID().getTaskID().getId());
           out.writeInt(partitions);
           for (int i = 0; i < partitions; i++){
             out.writeLong(sr.getIndex(i).startOffset);
@@ -1992,10 +1992,12 @@ public class MapTask extends Task {
             out.writeLong(sr.getIndex(i).rawLength);
           }
           out.close();
+          LOG.info("out closed.");
           client.close();
+          LOG.info("client closed.");
         } catch(IOException e) {
-          e.printStackTrace();
-          throw new IOException("Unable to connect or write RDMA server.");
+          LOG.error(e.getMessage());
+          throw new IOException("Unable to connect or write RDMA server."+ e);
         }
 
 

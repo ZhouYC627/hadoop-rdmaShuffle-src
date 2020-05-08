@@ -148,7 +148,11 @@
       <groupId>org.fusesource.leveldbjni</groupId>
       <artifactId>leveldbjni-all</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>com.ibm.disni</groupId>
+      <artifactId>disni</artifactId>
+      <version>2.1</version>
+    </dependency>
   </dependencies>
 
   <build>

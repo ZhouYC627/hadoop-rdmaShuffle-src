@@ -410,6 +410,11 @@ public class JobConf extends Configuration {
       "mapreduce.job.restart.recover";
 
   /**
+   * If the job is running on RDMA mode
+   */
+  public static final boolean RDMA_SHUFFLE = true;
+
+  /**
    * The variable is kept for M/R 1.x applications, M/R 2.x applications should
    * not use it
    */
@@ -1987,6 +1992,10 @@ public class JobConf extends Configuration {
               + " Refer to the APIs getMemoryForMapTask() and"
               + " getMemoryForReduceTask() for details.");
     return -1;
+  }
+
+  public boolean getRdmaShuffle(){
+    return RDMA_SHUFFLE;
   }
 
   /*

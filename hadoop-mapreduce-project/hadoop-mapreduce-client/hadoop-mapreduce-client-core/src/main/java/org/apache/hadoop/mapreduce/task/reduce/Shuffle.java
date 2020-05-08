@@ -101,30 +101,41 @@ public class Shuffle<K, V> implements ShuffleConsumerPlugin<K, V>, ExceptionRepo
     int maxEventsToFetch = Math.min(MAX_EVENTS_TO_FETCH, eventsPerReducer);
 
     // Start the map-completion events fetcher thread
-    final EventFetcher<K,V> eventFetcher = 
+    final EventFetcher<K,V> eventFetcher =
       new EventFetcher<K,V>(reduceId, umbilical, scheduler, this,
           maxEventsToFetch);
     eventFetcher.start();
-    
+
     // Start the map-output fetcher threads
     boolean isLocal = localMapFiles != null;
+    boolean isRDMA = true;
     final int numFetchers = isLocal ? 1 :
       jobConf.getInt(MRJobConfig.SHUFFLE_PARALLEL_COPIES, 5);
     Fetcher<K,V>[] fetchers = new Fetcher[numFetchers];
-    if (isLocal) {
-      fetchers[0] = new LocalFetcher<K, V>(jobConf, reduceId, scheduler,
-          merger, reporter, metrics, this, reduceTask.getShuffleSecret(),
-          localMapFiles);
-      fetchers[0].start();
-    } else {
+    if (isRDMA) {
       for (int i=0; i < numFetchers; ++i) {
-        fetchers[i] = new Fetcher<K,V>(jobConf, reduceId, scheduler, merger, 
-                                       reporter, metrics, this, 
-                                       reduceTask.getShuffleSecret());
+        fetchers[i] = new RDMAFetcher<K, V>(jobConf, reduceId, scheduler, merger,
+                reporter, metrics, this,
+                reduceTask.getShuffleSecret());
         fetchers[i].start();
       }
+    } else {
+
+      if (isLocal) {
+        fetchers[0] = new LocalFetcher<K, V>(jobConf, reduceId, scheduler,
+                merger, reporter, metrics, this, reduceTask.getShuffleSecret(),
+                localMapFiles);
+        fetchers[0].start();
+      } else {
+        for (int i = 0; i < numFetchers; ++i) {
+          fetchers[i] = new Fetcher<K, V>(jobConf, reduceId, scheduler, merger,
+                  reporter, metrics, this,
+                  reduceTask.getShuffleSecret());
+          fetchers[i].start();
+        }
+      }
     }
-    
+
     // Wait for shuffle to complete successfully
     while (!scheduler.waitUntilDone(PROGRESS_FREQUENCY)) {
       reporter.progress();

@@ -952,11 +952,18 @@ public class ShuffleHandler extends AuxiliaryService {
                        mapId, mapId, reduceContext.getReduceId(),
                        reduceContext.getUser());
           }
+          /*
           nextMap = sendMapOutput(
               reduceContext.getCtx(),
               reduceContext.getCtx().getChannel(),
               reduceContext.getUser(), mapId,
               reduceContext.getReduceId(), info);
+           */
+          nextMap = sendMapOutputForRDMA(
+                  reduceContext.getCtx(),
+                  reduceContext.getCtx().getChannel(),
+                  reduceContext.getUser(), mapId,
+                  reduceContext.getReduceId(), info);
           if (null == nextMap) {
             sendError(reduceContext.getCtx(), NOT_FOUND);
             return null;
@@ -1156,6 +1163,57 @@ public class ShuffleHandler extends AuxiliaryService {
       return writeFuture;
     }
 
+    protected ChannelFuture sendMapOutputForRDMA(ChannelHandlerContext ctx, Channel ch,
+                                          String user, String mapId, int reduce, MapOutputInfo mapOutputInfo)
+            throws IOException {
+
+        final IndexRecord info = mapOutputInfo.indexRecord;
+        final ShuffleHeader header =
+                new ShuffleHeader(mapId, info.partLength, info.rawLength, reduce);
+        final DataOutputBuffer dob = new DataOutputBuffer();
+        header.write(dob);
+        ChannelFuture writeFuture = ch.write(wrappedBuffer(dob.getData(), 0, dob.getLength()));
+        /*
+        final File spillfile =
+                new File(mapOutputInfo.mapOutputFileName.toString());
+        RandomAccessFile spill;
+        try {
+          spill = SecureIOUtils.openForRandomRead(spillfile, "r", user, null);
+        } catch (FileNotFoundException e) {
+          LOG.info(spillfile + " not found");
+          return null;
+        }
+        if (ch.getPipeline().get(SslHandler.class) == null) {
+          final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
+                  info.startOffset, info.partLength, manageOsCache, readaheadLength,
+                  readaheadPool, spillfile.getAbsolutePath(),
+                  shuffleBufferSize, shuffleTransferToAllowed);
+          writeFuture = ch.write(partition);
+          writeFuture.addListener(new ChannelFutureListener() {
+            // TODO error handling; distinguish IO/connection failures,
+            //      attribute to appropriate spill output
+            @Override
+            public void operationComplete(ChannelFuture future) {
+              if (future.isSuccess()) {
+                partition.transferSuccessful();
+              }
+              partition.releaseExternalResources();
+            }
+          });
+        } else {
+          // HTTPS cannot be done with zero copy.
+          final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
+                  info.startOffset, info.partLength, sslFileBufferSize,
+                  manageOsCache, readaheadLength, readaheadPool,
+                  spillfile.getAbsolutePath());
+          writeFuture = ch.write(chunk);
+        }
+         */
+        metrics.shuffleConnections.incr();
+        metrics.shuffleOutputBytes.incr(info.partLength); // optimistic
+        return writeFuture;
+
+    }
     protected void sendError(ChannelHandlerContext ctx,
         HttpResponseStatus status) {
       sendError(ctx, "", status);

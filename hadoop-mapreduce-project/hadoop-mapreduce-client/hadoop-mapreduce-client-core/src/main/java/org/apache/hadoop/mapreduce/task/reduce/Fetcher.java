@@ -194,7 +194,7 @@ class Fetcher<K,V> extends Thread {
         } finally {
           if (host != null) {
             scheduler.freeHost(host);
-            metrics.threadFree();            
+            metrics.threadFree();
           }
         }
       }
@@ -225,6 +225,10 @@ class Fetcher<K,V> extends Thread {
     if (sslFactory != null) {
       sslFactory.destroy();
     }
+  }
+
+  public boolean isStopped(){
+    return stopped;
   }
 
   @VisibleForTesting
@@ -258,7 +262,7 @@ class Fetcher<K,V> extends Thread {
     closeConnection();
   }
 
-  private DataInputStream openShuffleUrl(MapHost host,
+  protected DataInputStream openShuffleUrl(MapHost host,
       Set<TaskAttemptID> remaining, URL url) {
     DataInputStream input = null;
 
@@ -652,7 +656,7 @@ class Fetcher<K,V> extends Thread {
    * @return
    * @throws MalformedURLException
    */
-  private URL getMapOutputURL(MapHost host, Collection<TaskAttemptID> maps
+  protected URL getMapOutputURL(MapHost host, Collection<TaskAttemptID> maps
                               )  throws MalformedURLException {
     // Get the base url
     StringBuffer url = new StringBuffer(host.getBaseUrl());
