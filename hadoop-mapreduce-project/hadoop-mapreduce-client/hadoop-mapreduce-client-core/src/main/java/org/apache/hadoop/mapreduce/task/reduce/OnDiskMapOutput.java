@@ -96,6 +96,7 @@ class OnDiskMapOutput<K, V> extends MapOutput<K, V> {
     input = new IFileInputStream(input, compressedLength, conf);
     // Copy data to local-disk
     long bytesLeft = compressedLength;
+    int readCount = 0;
     try {
       final int BYTES_TO_READ = 64 * 1024;
       byte[] buf = new byte[BYTES_TO_READ];
@@ -107,6 +108,7 @@ class OnDiskMapOutput<K, V> extends MapOutput<K, V> {
         }
         disk.write(buf, 0, n);
         bytesLeft -= n;
+        LOG.info("byteLeft = " + bytesLeft + " readCount: " + readCount++);
         metrics.inputBytes(n);
         reporter.progress();
       }

@@ -25,11 +25,11 @@ public class RDMAClient {
     }
 
 
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
         BasicConfigurator.configure();
         RDMAClient simpleClient = new RDMAClient();
 
-        /*
+        *//*
         CmdLineCommon cmdLine = new CmdLineCommon("rdma.Client");
 
         try {
@@ -40,7 +40,7 @@ public class RDMAClient {
         }
         String host = cmdLine.getIp();
         int port = cmdLine.getPort();
-         */
+         *//*
 
         String host = "";
         int port = -1;
@@ -57,7 +57,7 @@ public class RDMAClient {
         }
         rdmaStream.closeEndpoint();
         simpleClient.closeEndpointGroup();
-    }
+    }*/
 
     public void closeEndpointGroup() throws IOException, InterruptedException {
         this.endpointGroup.close();

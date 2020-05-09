@@ -11,6 +11,9 @@ import java.nio.ByteBuffer;
 
 public class RdmaDataInputStream extends InputStream {
     private ClientEndpoint endpoint;
+    private int mapperId;
+    private int reducerId;
+    private int length;
 
     public RdmaDataInputStream(RdmaActiveEndpointGroup<ClientEndpoint> endpointGroup, InetSocketAddress address) throws Exception {
         endpoint = endpointGroup.createEndpoint();
@@ -19,17 +22,24 @@ public class RdmaDataInputStream extends InputStream {
         DiSNILogger.getLogger().info("client connected, address " + _addr.toString());
     }
 
-    public void prepareInfo(int mapperId, int reducerId) throws IOException {
+    public void prepareInfo(int mapperId, int reducerId, int length) throws IOException {
+        this.mapperId = mapperId;
+        this.reducerId = reducerId;
+        this.length = length;
+        updateInfo();
+    }
+
+    public void updateInfo(){
         ByteBuffer sendBuffer = endpoint.getSendBuf();
         IbvMr dataMemoryRegion = endpoint.getDataMr();
         sendBuffer.clear();
         sendBuffer.putLong(dataMemoryRegion.getAddr());
         sendBuffer.putInt(dataMemoryRegion.getLkey());
-        sendBuffer.putInt(mapperId);
-        sendBuffer.putInt(reducerId);
+        sendBuffer.putInt(this.mapperId);
+        sendBuffer.putInt(this.reducerId);
+        sendBuffer.putInt(this.length);
         sendBuffer.clear();
     }
-
     @Override
     public int read() throws IOException {
         return 0;
@@ -38,7 +48,10 @@ public class RdmaDataInputStream extends InputStream {
     int i = 0;
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
+        this.length = len;
+        updateInfo();
         int bytesWritten = 0;
+
         try {
             endpoint.executePostSend();
 
@@ -55,15 +68,9 @@ public class RdmaDataInputStream extends InputStream {
 
             DiSNILogger.getLogger().info("rdma.Client::Write" + i++ + " Completed notified by the immediate value");
             dataBuf.clear();
-            // len is at most buffer's size
-            for (int j = 0; j < len; j++) {
-                byte bt = dataBuf.get();
-                if (bt == 0) {
-                    break;
-                }
-                b[bytesWritten++] = bt;
-            }
-            DiSNILogger.getLogger().info("rdma.Client::memory is written by server: " + new String(b, 0, bytesWritten));
+            bytesWritten = Math.min(len, dataBuf.limit());
+            dataBuf.get(b, 0, bytesWritten);
+            DiSNILogger.getLogger().info("rdma.Client::memory is written by server: " + bytesWritten);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

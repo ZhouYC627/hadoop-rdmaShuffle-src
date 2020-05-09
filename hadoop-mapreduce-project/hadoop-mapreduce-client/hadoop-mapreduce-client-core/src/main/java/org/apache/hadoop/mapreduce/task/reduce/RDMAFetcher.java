@@ -22,6 +22,8 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
 
     private static final Log LOG = LogFactory.getLog(RDMAFetcher.class);
     private static final int DEFAULT_PORT = 1919;
+    private int BYTES_TO_READ = 64 * 1024;
+    private HashMap<String, String> hosts = null;
 
     private JobConf job;
 
@@ -29,6 +31,9 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
         super(job, reduceId, scheduler, merger, reporter, metrics,
                 exceptionReporter, shuffleKey);
         this.job = job;
+        this.hosts = new HashMap<>();
+        hosts.put("apt127.apt.emulab.net", "10.0.1.1");
+        hosts.put("apt126.apt.emulab.net", "10.0.1.2");
         setName("rdmaFetcher#" + id);
         setDaemon(true);
     }
@@ -64,7 +69,7 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
 
     private void rdmaFromHost(MapHost host, int reduceId) throws Exception {
         String hostIP = host.getHostName();
-        hostIP = hostIP.substring(0, hostIP.indexOf(':'));
+        hostIP = hosts.get(hostIP.substring(0, hostIP.indexOf(':')));
         LOG.info("HostIP: " + hostIP);
 
         // Get completed maps on 'host'
@@ -129,7 +134,7 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
         try {
             long startTime = Time.monotonicNow();
 
-            input.prepareInfo(mapId.getTaskID().getId(), forReduce);
+            input.prepareInfo(mapId.getTaskID().getId(), forReduce, BYTES_TO_READ);
 
             InputStream is = CryptoUtils.wrapIfNecessary(job, input, compressedLength);
             compressedLength -= CryptoUtils.cryptoPadding(job);
