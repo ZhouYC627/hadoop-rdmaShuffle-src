@@ -57,20 +57,20 @@ public class RdmaDataInputStream extends InputStream {
 
             // wait until the RDMA SEND message to be sent
             IbvWC sendWc = endpoint.getSendCompletionEvents().take();
-            DiSNILogger.getLogger().info("Send wr_id: " + sendWc.getWr_id() + " op: " + sendWc.getOpcode());
-            DiSNILogger.getLogger().info("Sending" + i + " completed");
+            ///DiSNILogger.getLogger().info("Send wr_id: " + sendWc.getWr_id() + " op: " + sendWc.getOpcode());
+            //DiSNILogger.getLogger().info("Sending" + i + " completed");
 
             // wait for the receive buffer received immediate value
             IbvWC recWc = endpoint.getWriteCompletionEvents().take();
-            DiSNILogger.getLogger().info("wr_id: " + recWc.getWr_id() + " op: " + recWc.getOpcode());
+            //DiSNILogger.getLogger().info("wr_id: " + recWc.getWr_id() + " op: " + recWc.getOpcode());
             endpoint.executePostRecv();
             ByteBuffer dataBuf = endpoint.getDataBuf();
 
-            DiSNILogger.getLogger().info("rdma.Client::Write" + i++ + " Completed notified by the immediate value");
+            //DiSNILogger.getLogger().info("rdma.Client::Write" + i++ + " Completed notified by the immediate value");
             dataBuf.clear();
             bytesWritten = Math.min(len, dataBuf.limit());
             dataBuf.get(b, 0, bytesWritten);
-            DiSNILogger.getLogger().info("rdma.Client::memory is written by server: " + bytesWritten);
+            //DiSNILogger.getLogger().info("rdma.Client::memory is written by server: " + bytesWritten);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

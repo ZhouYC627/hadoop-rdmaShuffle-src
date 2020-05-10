@@ -108,7 +108,7 @@ class OnDiskMapOutput<K, V> extends MapOutput<K, V> {
         }
         disk.write(buf, 0, n);
         bytesLeft -= n;
-        LOG.info("byteLeft = " + bytesLeft + " readCount: " + readCount++);
+        //LOG.info("byteLeft = " + bytesLeft + " readCount: " + readCount++);
         metrics.inputBytes(n);
         reporter.progress();
       }

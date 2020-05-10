@@ -32,8 +32,8 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
                 exceptionReporter, shuffleKey);
         this.job = job;
         this.hosts = new HashMap<>();
-        hosts.put("apt127.apt.emulab.net", "10.0.1.1");
-        hosts.put("apt126.apt.emulab.net", "10.0.1.2");
+        hosts.put("apt127.apt.emulab.net", "10.0.1.1"); //node-0
+        hosts.put("apt126.apt.emulab.net", "10.0.1.2"); //node-1
         setName("rdmaFetcher#" + id);
         setDaemon(true);
     }
@@ -132,7 +132,7 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
         MapOutput<K,V> mapOutput = null;
 
         try {
-            long startTime = Time.monotonicNow();
+
 
             input.prepareInfo(mapId.getTaskID().getId(), forReduce, BYTES_TO_READ);
 
@@ -157,7 +157,7 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
                 //Not an error but wait to process data.
                 return false;
             }
-
+            long startTime = Time.monotonicNow();
             LOG.info("fetcher#" + id + " about to shuffle output of map "
                     + mapOutput.getMapId() + " decomp: " + decompressedLength
                     + " len: " + compressedLength + " to " + mapOutput.getDescription());
@@ -167,7 +167,7 @@ public class RDMAFetcher<K, V> extends Fetcher<K, V> {
             // Inform the shuffle scheduler
             long endTime = Time.monotonicNow();
             // Reset retryStartTime as map task make progress if retried before.
-
+            LOG.info("fetcher#" + id + "Shuffle time: " + (endTime-startTime));
             scheduler.copySucceeded(mapId, host, compressedLength,
                     startTime, endTime, mapOutput);
             metrics.successFetch();
