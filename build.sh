@@ -69,8 +69,10 @@ hadoop namenode -format
 # start-all.sh
 
 # terasort 
-hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar teragen 1000000 terasort/1000000-input
-hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar terasort terasort/1000000-input terasort/1000000-output
+#hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar teragen 1000000 terasort/1000000-input
+#hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar terasort terasort/1000000-input terasort/1000000-output
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar teragen 1000000 terasort/1000000-input
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar terasort -Dmapreduce.reduce.env=LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH terasort/1000000-input terasort/1000000-output
 
 Solution:
 1) "ls: .: No such file or directory"
